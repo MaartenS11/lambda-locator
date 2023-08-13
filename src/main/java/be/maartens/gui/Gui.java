@@ -81,70 +81,7 @@ public class Gui extends JFrame {
             }
         });
 
-        JFileChooser fileChooser = new JFileChooser();
-        JMenuBar menuBar = new JMenuBar();
-        JMenu fileMenu = new JMenu("File");
-        JMenuItem openItem = new JMenuItem("Open");
-        fileMenu.add(openItem);
-        openItem.addActionListener(actionEvent -> {
-            int state = fileChooser.showOpenDialog(this);
-            if (state == JFileChooser.APPROVE_OPTION) {
-                System.out.println("Open " + fileChooser.getSelectedFile());
-
-                try {
-                    loadFile(fileChooser.getSelectedFile().getAbsolutePath());
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
-        JMenuItem classFilterItem = new JMenuItem("Configure class filter");
-        fileMenu.add(classFilterItem);
-        classFilterItem.addActionListener(actionEvent -> {
-            String result = JOptionPane.showInputDialog(
-                    this,
-                    "Enter a class name filter:",
-                    "Set class name filter", JOptionPane.QUESTION_MESSAGE
-            );
-            if (result != null) {
-                this.classNameFilter = result;
-                reload();
-            }
-        });
-        JMenuItem disassembleItem = new JMenuItem("Disassemble");
-        fileMenu.add(disassembleItem);
-        disassembleItem.addActionListener(actionEvent -> {
-            ClassSelector classSelector = new ClassSelector(this, classPool);
-            classSelector.setVisible(true);
-            String selectedItem = classSelector.getSelectedItem();
-            if (selectedItem != null)
-                disassembleClass(selectedItem);
-        });
-        menuBar.add(fileMenu);
-        JMenu editMenu = new JMenu("Edit");
-        JMenuItem findItem = new JMenuItem("Find");
-        editMenu.add(findItem);
-        findItem.addActionListener(actionEvent -> {
-            findDialog.setVisible(true);
-            findDialog.requestFocus();
-        });
-        JMenuItem closeTabItem = new JMenuItem("Close tab");
-        editMenu.add(closeTabItem);
-        closeTabItem.addActionListener(actionEvent -> tabbedPane.remove(tabbedPane.getSelectedComponent()));
-        JMenuItem closeAllTabsItem = new JMenuItem("Close all tabs");
-        editMenu.add(closeAllTabsItem);
-        closeAllTabsItem.addActionListener(actionEvent -> tabbedPane.removeAll());
-        JMenuItem compileItem = new JMenuItem("Compile");
-        compileItem.addActionListener(actionEvent -> {
-            try {
-                assemble();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
-        editMenu.add(compileItem);
-        menuBar.add(editMenu);
-        setJMenuBar(menuBar);
+        setupMenuBar();
 
         this.tree = new JTree(new DefaultMutableTreeNode());
 
@@ -194,6 +131,97 @@ public class Gui extends JFrame {
         setContentPane(splitPane);
         pack();
         splitPane.setDividerLocation(0.3);
+    }
+
+    private void setupMenuBar() {
+        JMenuBar menuBar = new JMenuBar();
+        menuBar.add(createFileMenu());
+        menuBar.add(createEditMenu());
+        setJMenuBar(menuBar);
+    }
+
+    private JMenu createFileMenu() {
+        JMenu fileMenu = new JMenu("File");
+
+        // Setup open menu.
+        JMenuItem openItem = new JMenuItem("Open");
+        fileMenu.add(openItem);
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setFileHidingEnabled(false);
+        openItem.addActionListener(actionEvent -> {
+            int state = fileChooser.showOpenDialog(this);
+            if (state == JFileChooser.APPROVE_OPTION) {
+                System.out.println("Open " + fileChooser.getSelectedFile());
+
+                try {
+                    loadFile(fileChooser.getSelectedFile().getAbsolutePath());
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+
+        // Setup class filter menu.
+        JMenuItem classFilterItem = new JMenuItem("Configure class filter");
+        fileMenu.add(classFilterItem);
+        classFilterItem.addActionListener(actionEvent -> {
+            String result = JOptionPane.showInputDialog(
+                    this,
+                    "Enter a class name filter:",
+                    "Set class name filter", JOptionPane.QUESTION_MESSAGE
+            );
+            if (result != null) {
+                this.classNameFilter = result;
+                reload();
+            }
+        });
+
+        // Set up disassemble menu.
+        JMenuItem disassembleItem = new JMenuItem("Disassemble");
+        fileMenu.add(disassembleItem);
+        disassembleItem.addActionListener(actionEvent -> {
+            ClassSelector classSelector = new ClassSelector(this, classPool);
+            classSelector.setVisible(true);
+            String selectedItem = classSelector.getSelectedItem();
+            if (selectedItem != null)
+                disassembleClass(selectedItem);
+        });
+
+        return fileMenu;
+    }
+
+    private JMenu createEditMenu() {
+        JMenu editMenu = new JMenu("Edit");
+
+        // Set up find menu.
+        JMenuItem findItem = new JMenuItem("Find");
+        editMenu.add(findItem);
+        findItem.addActionListener(actionEvent -> {
+            findDialog.setVisible(true);
+            findDialog.requestFocus();
+        });
+
+        // Set up close tab menu.
+        JMenuItem closeTabItem = new JMenuItem("Close tab");
+        editMenu.add(closeTabItem);
+        closeTabItem.addActionListener(actionEvent -> tabbedPane.remove(tabbedPane.getSelectedComponent()));
+
+        // Set up close all tabs menu.
+        JMenuItem closeAllTabsItem = new JMenuItem("Close all tabs");
+        editMenu.add(closeAllTabsItem);
+        closeAllTabsItem.addActionListener(actionEvent -> tabbedPane.removeAll());
+
+        // Set up compile menu.
+        JMenuItem compileItem = new JMenuItem("Compile");
+        compileItem.addActionListener(actionEvent -> {
+            try {
+                assemble();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        editMenu.add(compileItem);
+        return editMenu;
     }
 
     public Gui(String filename, String classNameFilter) throws IOException {
