@@ -18,6 +18,7 @@ dependencies {
     implementation("com.guardsquare:proguard-assembler:1.0.0")
     implementation("com.fifesoft:rsyntaxtextarea:3.3.3")
     implementation("com.fifesoft:rstaui:3.3.1")
+    implementation("com.fifesoft:autocomplete:3.3.1")
     implementation("org.apache.logging.log4j:log4j-api:2.19.0")
     implementation(kotlin("stdlib-jdk8"))
     testImplementation("io.kotest:kotest-runner-junit5:5.6.2")

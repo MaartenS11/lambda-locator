@@ -12,6 +12,13 @@ import com.guardsquare.proguard.disassembler.Printer;
 import org.fife.rsta.ui.search.FindDialog;
 import org.fife.rsta.ui.search.SearchEvent;
 import org.fife.rsta.ui.search.SearchListener;
+import org.fife.ui.autocomplete.AutoCompletion;
+import org.fife.ui.autocomplete.BasicCompletion;
+import org.fife.ui.autocomplete.CompletionCellRenderer;
+import org.fife.ui.autocomplete.CompletionProvider;
+import org.fife.ui.autocomplete.DefaultCompletionProvider;
+import org.fife.ui.autocomplete.LanguageAwareCompletionProvider;
+import org.fife.ui.autocomplete.ShorthandCompletion;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rsyntaxtextarea.Theme;
@@ -19,10 +26,12 @@ import org.fife.ui.rtextarea.RTextArea;
 import org.fife.ui.rtextarea.RTextScrollPane;
 import org.fife.ui.rtextarea.SearchEngine;
 import org.fife.ui.rtextarea.SearchResult;
+import org.fife.ui.rtextarea.ToolTipSupplier;
 import proguard.classfile.ClassPool;
 import proguard.classfile.Clazz;
 import proguard.classfile.Method;
 import proguard.classfile.ProgramClass;
+import proguard.classfile.instruction.Instruction;
 import proguard.io.util.IOUtil;
 
 import javax.swing.*;
@@ -302,6 +311,8 @@ public class Gui extends JFrame {
         textArea.setText(classToString((ProgramClass) pClass));
         textArea.setMarkOccurrences(true);
         textArea.setMarkOccurrencesDelay(150);
+        textArea.setTabsEmulated(true);
+        textArea.setTabSize(4);
 
         textArea.registerKeyboardAction(
                 actionEvent -> findDialog.setVisible(!findDialog.isVisible()),
@@ -317,6 +328,21 @@ public class Gui extends JFrame {
             ioe.printStackTrace();
         }
 
+        // Setup basic autocompletion
+        CompletionProvider completionProvider = createCompletionProvider();
+        AutoCompletion autoCompletion = new AutoCompletion(completionProvider);
+        autoCompletion.setListCellRenderer(new CompletionCellRenderer());
+        autoCompletion.setShowDescWindow(false);
+
+        autoCompletion.setAutoCompleteEnabled(true);
+        autoCompletion.setAutoActivationEnabled(true);
+        autoCompletion.setAutoCompleteSingleChoices(false);
+        autoCompletion.setAutoActivationDelay(100);
+        autoCompletion.install(textArea);
+
+        textArea.setToolTipSupplier((ToolTipSupplier)completionProvider);
+        ToolTipManager.sharedInstance().registerComponent(textArea);
+
         RTextScrollPane textScrollPane = new RTextScrollPane(textArea);
         tabbedPane.add(pClass.getName(), textScrollPane);
         tabbedPane.setSelectedComponent(textScrollPane);
@@ -330,6 +356,24 @@ public class Gui extends JFrame {
         closeButton.addActionListener(actionEvent -> tabbedPane.remove(textScrollPane));
         tabPanel.add(closeButton, BorderLayout.EAST);
         tabbedPane.setTabComponentAt(tabbedPane.getSelectedIndex(), tabPanel);
+    }
+
+    private CompletionProvider createCompletionProvider() {
+        DefaultCompletionProvider provider = new DefaultCompletionProvider();
+        provider.setAutoActivationRules(true, ".");
+
+        // Add completions for all java instructions.
+        for (String str : Instruction.NAMES) {
+            provider.addCompletion(new BasicCompletion(provider, str));
+        }
+
+        // Add a few shorthand completions
+        provider.addCompletion(new ShorthandCompletion(provider, "sysout",
+                "getstatic System#PrintStream out"));
+        provider.addCompletion(new ShorthandCompletion(provider, "println",
+                "invokevirtual PrintStream#void println(String)"));
+
+        return new LanguageAwareCompletionProvider(provider);
     }
 
     public void assemble() throws IOException {
