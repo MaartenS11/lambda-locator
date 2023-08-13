@@ -37,7 +37,7 @@ public class ClassSelector extends JDialog {
             if (classNameFilter.contains(".")) {
                 classNameFilter = ClassUtil.internalClassName(classNameFilter);
             }
-            classPool.classesAccept(classNameFilter + "**", clazz -> classListModel.addElement(clazz.getName()));
+            classPool.classesAccept("**" + classNameFilter + "**", clazz -> classListModel.addElement(clazz.getName()));
         });
 
         JPanel panel = new JPanel(new BorderLayout());
